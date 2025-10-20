@@ -9,56 +9,48 @@ let storedMimeType: string | null = null;
 
 const prompt = `Create a black-and-white, high-resolution half-body portrait of a person based on the uploaded photo, reimagined as a Macedonian man or woman from around 1920 — such as a vojvoda (freedom fighter), teacher, professor, or citizen.
 
-Keep the person’s facial likeness and realistic proportions.
+Keep the person’s core facial likeness (eyes, nose, mouth structure) and realistic proportions, but introduce creative variation in hair and facial hair as instructed below.
 
 Show the subject from the waist up, facing randomly left, right, or center (¾ profile or frontal).
 
 Background: plain white or light-gray studio wall, typical of a small Macedonian photo atelier — no scenery or props.
 
+🧔 CRITICAL RULE: Facial Hair Randomization for Men
+This is the most important rule for male subjects. You MUST introduce random variation in facial hair. DO NOT just copy the facial hair from the uploaded photo.
+1.  Analyze the uploaded photo.
+2.  If the subject is male, you MUST randomly choose ONE of the following options for the generated portrait:
+    - Option A: Add a mustache (style appropriate for 1920s Macedonia).
+    - Option B: Add a full beard (style appropriate for 1920s Macedonia).
+    - Option C: Make the subject completely clean-shaven.
+3.  This decision must be random for EVERY generation. For example, if the original person has a beard, you might generate one version clean-shaven, and the next with only a mustache. If the original is clean-shaven, you must sometimes add a beard or mustache. This variation is mandatory.
+
 👔 Authentic & Logical Attire Variation Rules
 
 Every portrait must show clothing that is typical for the person’s role or background, but with natural variations so no two outfits look identical.
 
-Professors, teachers, and urban citizens:
+Professors, teachers, and urban citizens (male):
 
 Usually wear early-20th-century urban attire, but vary formality.
-
 Some portraits may show only a shirt with rolled sleeves or open collar; others may include a vest, jacket, or tie.
-
-Alternate between:
-
-plain shirt (no tie)
-
-shirt + vest (no jacket)
-
-shirt + tie + jacket
-
-vest + tie (no jacket)
-
+Alternate between: plain shirt (no tie), shirt + vest (no jacket), shirt + tie + jacket, vest + tie (no jacket).
 Randomly include or omit small accessories (pocket watch, glasses, hat).
-
 Fabrics: cotton, wool, or linen — modest, not luxurious.
 
 Vojvodi and folk men:
 
 Wear traditional Macedonian garments: embroidered shirt, wool vest (elek), wide sash (pojas), cloth trousers (čakširi).
-
 Vary completeness: sometimes full folk outfit, sometimes only shirt + pojas, or shirt + vest.
-
 Do not repeat identical combinations; keep them believable for the 1920s countryside.
 
 Women (folk and urban):
 
 Alternate between folk blouses with apron/scarf and modest urban blouses or dresses from the 1920s.
-
 Randomly choose whether jewelry, scarf, or vest is present.
 
 General rules:
 
 No foreign military or official uniforms.
-
 Outfits must always appear complete and modest, never missing logical elements.
-
 Randomize sleeve length, buttoning, layering, and accessories so every image feels like a different person photographed on a different day.
 
 The goal is authentic variation within Macedonian fashion of the 1920s — realistic, historically appropriate, and visually diverse.
@@ -76,7 +68,13 @@ The portrait must represent civilian Macedonian identity.
 Write a caption below the image in the format:
 Name Surname — "Nickname"
 
-First and last names must sound authentically Macedonian (examples: Jovan, Marija, Stefan, Vera, Gjorgi, Petar, Elenka, Nikola, Blazev, Trajkovska).
+First and last names must sound authentically Macedonian. For each new generation, you MUST generate a new, random, and unique name combination. Do not repeat names.
+Here are some examples of names to guide you, but do not limit yourself to them:
+Male First Names: Jovan, Stefan, Gjorgi, Petar, Nikola, Aleksandar, Zoran, Dragan, Igor, Ljupčo, Goran.
+Male Last Names: Stojanovski, Jovanovski, Angelov, Dimitrov, Popovski, Trajkov, Damjanov, Blazev, Krstev, Mitrev.
+Female First Names: Marija, Elena, Vera, Biljana, Violeta, Vesna, Svetlana, Liljana, Anita, Gordana.
+Female Last Names: Petrovska, Nikolovska, Stojanovska, Ivanovska, Trajkovska, Angelovska, Popovska, Ristevska.
+
 
 The nickname must be selected from the fixed list below and written exactly as it appears — letter for letter.
 
@@ -125,7 +123,7 @@ Do not use numbers, symbols, or substitute characters inside names.
 
 The caption must appear legible, clean, and correctly typed.
 
-Each generated portrait must be, historically accurate, linguistically correct, and visually authentic to Macedonia circa 1920.
+Each generated portrait must be unique, historically accurate, linguistically correct, and visually authentic to Macedonia circa 1920.
 
 Style: authentic Macedonian studio portrait, half-body, plain white background, random logical attire combinations, scanned black-and-white texture, caption in Macedonian Latin alphabet.
 
@@ -151,6 +149,13 @@ async function generateImage(base64Data: string, mimeType: string) {
 
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+    
+    // Create a random number for both the seed and prompt injection
+    const randomNumber = Math.floor(Math.random() * 1000000);
+    
+    // Inject randomness into the prompt text itself
+    const dynamicPrompt = `${prompt}\n\nInternal generation seed: ${randomNumber}. Ensure maximum variation from any previous generation.`;
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -162,12 +167,16 @@ async function generateImage(base64Data: string, mimeType: string) {
             },
           },
           {
-            text: prompt,
+            text: dynamicPrompt,
           },
         ],
       },
       config: {
         responseModalities: [Modality.IMAGE],
+        temperature: 1, // Max randomness
+        topP: 1, // Max randomness
+        topK: 64, // Widen the token selection pool
+        seed: randomNumber, // Use the same random number for the API seed
       },
     });
 
